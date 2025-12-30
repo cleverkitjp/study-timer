@@ -789,35 +789,44 @@
       function renderRecordBanner(){
         var entries = loadLogEntries();
         var latest = getLatestProvisionalEntry(entries);
+        if (recordBanner) recordBanner.hidden = true;
+        if (recordBannerText) recordBannerText.textContent = "";
+        if (recordBannerAction) {
+          recordBannerAction.textContent = "";
+          recordBannerAction.disabled = true;
+        }
         if (latest) {
           var timestamp = formatDateTime(latest.recordedAt);
-          if (!timestamp) {
-            recordBanner.hidden = true;
-            recordBannerAction.disabled = true;
-            return;
-          }
-          var label = timestamp + " ｜25分の集中を記録しました";
+          if (!timestamp || !recordBannerText || !recordBanner || !recordBannerAction) return;
+          var label = (timestamp + " ｜25分の集中を記録しました").trim();
+          if (!label) return;
           recordBannerText.textContent = label;
           recordBannerAction.textContent = "取り消す";
           recordBannerAction.disabled = false;
           recordBanner.hidden = false;
-          return;
-        }
-        if (state.lastCanceledAt) {
+        } else if (state.lastCanceledAt) {
           var canceledAt = formatDateTime(state.lastCanceledAt);
-          if (!canceledAt) {
+          if (!canceledAt || !recordBannerText || !recordBanner || !recordBannerAction) {
             state.lastCanceledAt = 0;
-            recordBanner.hidden = true;
-            recordBannerAction.disabled = true;
             return;
           }
-          recordBannerText.textContent = canceledAt + " ｜記録を取り消しました";
+          var canceledLabel = (canceledAt + " ｜記録を取り消しました").trim();
+          if (!canceledLabel) {
+            state.lastCanceledAt = 0;
+            return;
+          }
+          recordBannerText.textContent = canceledLabel;
           recordBannerAction.textContent = "取り消しました";
           recordBannerAction.disabled = true;
           recordBanner.hidden = false;
-          return;
         }
-        recordBanner.hidden = true;
+        if (recordBannerText && !recordBannerText.textContent.trim()) {
+          if (recordBannerAction) {
+            recordBannerAction.textContent = "";
+            recordBannerAction.disabled = true;
+          }
+          if (recordBanner) recordBanner.hidden = true;
+        }
       }
 
       async function copyText(text){
