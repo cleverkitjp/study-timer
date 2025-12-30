@@ -109,7 +109,7 @@
 
     .controls { display: grid; gap: 10px; margin-top: 6px; }
     .outside-card-area { display: grid; gap: 10px; margin-top: 10px; }
-    #hintLine { margin-bottom: 12px; }
+    #hintLine { margin-bottom: 16px; }
     .chip-row { display: flex; gap: 8px; flex-wrap: wrap; }
     .chip {
       border: 1px solid var(--border);
@@ -817,7 +817,7 @@
         skipRestBtn.style.display = isRest ? "inline-flex" : "none";
 
         hintLine.textContent = isRest
-          ? "休憩はスキップ可能です（疲れが残りやすいことがあります）。"
+          ? "休憩はスキップできますが、集中力を保つには短い休憩がおすすめです。軽く体を伸ばすだけでも効果があります。"
           : "集中が完了するとログに自動記録されます。";
 
         longBreakToggle.checked = !!state.longBreakEnabled;
