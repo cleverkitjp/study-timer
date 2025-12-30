@@ -35,8 +35,22 @@
     .hero { margin-top: 10px; }
     .sub2 { margin-top: 6px; color: var(--text-sub); }
 
-    .timer-card { margin-top: 12px; }
+    .timer-shell {
+      margin-top: 12px;
+      background: #161616;
+      border-radius: 18px;
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
     .timer-face { display: grid; gap: 12px; }
+    .timer-core {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      display: grid;
+      gap: 12px;
+    }
 
     .phase-pill {
       display: inline-flex; align-items: center; gap: 8px;
@@ -164,23 +178,25 @@
       <p class="sub2">ポモドーロテクニックとは、<br>「25分集中 → 5分休憩」をくり返す、シンプルな集中法です。</p>
     </header>
 
-    <section class="card timer-card" aria-label="タイマー">
+    <section class="timer-shell" aria-label="タイマー">
       <div class="timer-face">
-        <div>
-          <div class="phase-pill" id="phasePill" aria-live="polite">
-            <span class="phase-dot" aria-hidden="true"></span>
-            <span id="phaseLabel">集中</span>
+        <div class="timer-core" role="group" aria-label="集中・休憩カード">
+          <div>
+            <div class="phase-pill" id="phasePill" aria-live="polite">
+              <span class="phase-dot" aria-hidden="true"></span>
+              <span id="phaseLabel">集中</span>
+            </div>
+            <div class="phase-meta" id="phaseMeta">セット 1 / 4（長休憩まで）</div>
           </div>
-          <div class="phase-meta" id="phaseMeta">セット 1 / 4（長休憩まで）</div>
-        </div>
 
-        <div class="time" id="timeDisplay">25:00</div>
-        <div class="muted" id="hintLine">すぐ開始できます（設定は最小限）。</div>
+          <div class="time" id="timeDisplay">25:00</div>
+          <div class="muted" id="hintLine">すぐ開始できます（設定は最小限）。</div>
 
-        <div class="btn-row" role="group" aria-label="操作">
-          <button class="btn primary" id="startPauseBtn">開始</button>
-          <button class="btn ghost" id="resetBtn">リセット</button>
-          <button class="btn small" id="skipRestBtn" style="display:none;">休憩をスキップ</button>
+          <div class="btn-row" role="group" aria-label="操作">
+            <button class="btn primary" id="startPauseBtn">開始</button>
+            <button class="btn ghost" id="resetBtn">リセット</button>
+            <button class="btn small" id="skipRestBtn" style="display:none;">休憩をスキップ</button>
+          </div>
         </div>
 
         <div class="controls">
