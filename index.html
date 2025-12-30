@@ -72,6 +72,12 @@
       padding: 20px 0 12px;
       margin: 12px 0;
     }
+    .time .ss,
+    .time .sep {
+      font-size: 0.65em;
+      color: var(--text-sub);
+      opacity: 0.6;
+    }
 
     .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .btn-row .btn { width: 100%; }
@@ -217,7 +223,9 @@
             <div class="phase-meta" id="phaseMeta">セット 1 / 4（長休憩まで）</div>
           </div>
 
-          <div class="time" id="timeDisplay">25:00</div>
+          <div class="time" id="timeDisplay">
+            <span class="mm">25</span><span class="sep">:</span><span class="ss">00</span>
+          </div>
 
           <div class="btn-row" role="group" aria-label="操作">
             <button class="btn primary" id="startPauseBtn">開始</button>
@@ -379,10 +387,16 @@
       var resetLogBtn = document.getElementById("resetLogBtn");
 
       function pad2(n){ return (n < 10 ? "0" : "") + n; }
-      function formatMMSS(sec){
+      var timeDisplayMm = timeDisplay.querySelector(".mm");
+      var timeDisplaySep = timeDisplay.querySelector(".sep");
+      var timeDisplaySs = timeDisplay.querySelector(".ss");
+
+      function setTimeDisplay(sec){
         var m = Math.floor(sec / 60);
         var s = Math.max(0, sec % 60);
-        return pad2(m) + ":" + pad2(s);
+        timeDisplayMm.textContent = pad2(m);
+        timeDisplaySep.textContent = ":";
+        timeDisplaySs.textContent = pad2(s);
       }
       function nowMs(){ return Date.now(); }
 
@@ -798,7 +812,7 @@
       }
 
       function renderTimeOnly(){
-        timeDisplay.textContent = formatMMSS(state.remainingSec);
+        setTimeDisplay(state.remainingSec);
       }
 
       function render(){
