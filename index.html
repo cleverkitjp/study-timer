@@ -109,6 +109,7 @@
     summary::-webkit-details-marker { display: none; }
 
     .controls { display: grid; gap: 10px; margin-top: 6px; }
+    .outside-card-area { display: grid; gap: 10px; margin-top: 10px; }
     .chip-row { display: flex; gap: 8px; flex-wrap: wrap; }
     .chip {
       border: 1px solid var(--border);
@@ -220,37 +221,39 @@
           </div>
         </div>
       </div>
+    </section>
 
-        <div class="muted outside-card" id="hintLine">すぐ開始できます（設定は最小限）。</div>
+    <section class="outside-card-area outside-card" aria-label="目標セットとオプション">
+      <div class="muted" id="hintLine">すぐ開始できます（設定は最小限）。</div>
 
-        <div class="controls outside-card">
-          <div class="grid2">
-            <div>
-              <div class="muted">目標セット</div>
-              <div class="chip-row" role="group" aria-label="目標セット">
-                <button class="chip" data-goal="0" aria-pressed="true">目標なし</button><br>
-                <button class="chip" data-goal="4" aria-pressed="false">4セット</button><br>
-                <button class="chip" data-goal="8" aria-pressed="false">8セット</button><br>
-                <button class="chip" data-goal="12" aria-pressed="false">12セット</button>
-              </div>
-            </div>
-            <div>
-              <div class="muted">オプション</div>
-              <div class="row">
-                <label class="chip" style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
-                  <span>長休憩（4セットごと15分）</span>
-                  <input id="longBreakToggle" type="checkbox" checked />
-                </label>
-                <label class="chip" style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
-                  <span>画面を点けたまま（対応端末）</span>
-                  <input id="wakeLockToggle" type="checkbox" />
-                </label>
-              </div>
+      <div class="controls">
+        <div class="grid2">
+          <div>
+            <div class="muted">目標セット</div>
+            <div class="chip-row" role="group" aria-label="目標セット">
+              <button class="chip" data-goal="0" aria-pressed="true">目標なし</button><br>
+              <button class="chip" data-goal="4" aria-pressed="false">4セット</button><br>
+              <button class="chip" data-goal="8" aria-pressed="false">8セット</button><br>
+              <button class="chip" data-goal="12" aria-pressed="false">12セット</button>
             </div>
           </div>
-
-          <div class="hr"></div>
+          <div>
+            <div class="muted">オプション</div>
+            <div class="row">
+              <label class="chip" style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                <span>長休憩（4セットごと15分）</span>
+                <input id="longBreakToggle" type="checkbox" checked />
+              </label>
+              <label class="chip" style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                <span>画面を点けたまま（対応端末）</span>
+                <input id="wakeLockToggle" type="checkbox" />
+              </label>
+            </div>
+          </div>
         </div>
+
+        <div class="hr"></div>
+      </div>
     </section>
 
     <section class="row" aria-label="補足情報">
