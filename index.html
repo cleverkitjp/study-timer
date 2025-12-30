@@ -797,7 +797,17 @@
             return;
           }
           var label = timestamp + " ｜25分の集中を記録しました";
+          if (!label.trim() || !recordBannerText) {
+            recordBanner.hidden = true;
+            recordBannerAction.disabled = true;
+            return;
+          }
           recordBannerText.textContent = label;
+          if (!recordBannerText.textContent.trim()) {
+            recordBanner.hidden = true;
+            recordBannerAction.disabled = true;
+            return;
+          }
           recordBannerAction.textContent = "取り消す";
           recordBannerAction.disabled = false;
           recordBanner.hidden = false;
@@ -811,7 +821,20 @@
             recordBannerAction.disabled = true;
             return;
           }
-          recordBannerText.textContent = canceledAt + " ｜記録を取り消しました";
+          var canceledLabel = canceledAt + " ｜記録を取り消しました";
+          if (!canceledLabel.trim() || !recordBannerText) {
+            state.lastCanceledAt = 0;
+            recordBanner.hidden = true;
+            recordBannerAction.disabled = true;
+            return;
+          }
+          recordBannerText.textContent = canceledLabel;
+          if (!recordBannerText.textContent.trim()) {
+            state.lastCanceledAt = 0;
+            recordBanner.hidden = true;
+            recordBannerAction.disabled = true;
+            return;
+          }
           recordBannerAction.textContent = "取り消しました";
           recordBannerAction.disabled = true;
           recordBanner.hidden = false;
