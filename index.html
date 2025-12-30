@@ -136,6 +136,12 @@
       .btn-row { grid-template-columns: 1fr 1fr 1fr; }
       .btn-row .btn.primary { grid-column: span 2; }
     }
+/* ===== タイトルを控えめにする ===== */
+.hero h1 {
+  font-size: 1.3rem;   /* ← 少し小さめ */
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
   </style>
 
   <script type="application/ld+json">
@@ -154,7 +160,7 @@
 <body>
   <main class="wrap">
     <header class="hero">
-      <h1>勉強用ポモドーロタイマー｜なぜか集中できる25分タイマー</h1>
+      <h1>勉強用ポモドーロタイマー</h1>
       <p class="sub2">ポモドーロテクニックとは、<br>「25分集中 → 5分休憩」をくり返す、シンプルな集中法です。</p>
     </header>
 
@@ -215,7 +221,7 @@
           </details>
 
           <details id="logDetails">
-            <summary>▶ ログ</summary>
+            <summary>ログ</summary>
 
             <div class="log-kpis" aria-label="ログ集計" style="margin-top:10px;">
               <div class="kpi"><span>今日</span><b id="kpiToday">0.0時間</b></div>
