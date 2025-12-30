@@ -160,8 +160,13 @@
 }
 
     body.is-running .hero,
-    body.is-running details:not(#logDetails),
-    body.is-running .outside-card {
+    body.is-running details:not(#logDetails) {
+      opacity: 0.35;
+    }
+    body.is-running .outside-card > :not(#hintLine) {
+      opacity: 0.35;
+    }
+    body.is-running #hintLine.is-muted {
       opacity: 0.35;
     }
     body.is-running #logDetails {
@@ -819,6 +824,7 @@
         hintLine.textContent = isRest
           ? "休憩はスキップできますが、集中力を保つには短い休憩がおすすめです。軽く体を伸ばすだけでも効果があります。"
           : "集中が完了するとログに自動記録されます。";
+        hintLine.classList.toggle("is-muted", !isRest);
 
         longBreakToggle.checked = !!state.longBreakEnabled;
 
