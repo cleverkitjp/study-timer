@@ -157,6 +157,26 @@
   line-height: 1.4;
   margin-bottom: 6px;
 }
+
+    body.is-running .hero,
+    body.is-running details:not(#logDetails) {
+      opacity: 0.45;
+    }
+    body.is-running #logDetails {
+      opacity: 0.5;
+    }
+    body.is-running #timeDisplay,
+    body.is-running #phasePill,
+    body.is-running #phaseLabel,
+    body.is-running #phaseMeta,
+    body.is-running #startPauseBtn,
+    body.is-running #skipRestBtn {
+      opacity: 1;
+    }
+    body:not(.is-running) #logDetails summary {
+      opacity: 1;
+      font-weight: 900;
+    }
   </style>
 
   <script type="application/ld+json">
@@ -800,6 +820,8 @@
           : "集中が完了するとログに自動記録されます。";
 
         longBreakToggle.checked = !!state.longBreakEnabled;
+
+        document.body.classList.toggle("is-running", state.running);
 
         saveState();
       }
