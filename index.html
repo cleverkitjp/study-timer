@@ -770,6 +770,7 @@
 
       function formatDateTime(ms){
         var d = new Date(ms);
+        if (!isFinite(d.getTime())) return "";
         var y = d.getFullYear();
         var m = pad2(d.getMonth() + 1);
         var day = pad2(d.getDate());
@@ -785,11 +786,23 @@
         return null;
       }
 
+      function hideRecordBanner(){
+        recordBannerText.textContent = "";
+        recordBannerAction.textContent = "";
+        recordBannerAction.disabled = true;
+        recordBanner.hidden = true;
+      }
+
       function renderRecordBanner(){
         var entries = loadLogEntries();
         var latest = getLatestProvisionalEntry(entries);
         if (latest) {
-          var label = formatDateTime(latest.recordedAt) + " ｜25分の集中を記録しました";
+          var timestamp = formatDateTime(latest.recordedAt);
+          if (!timestamp) {
+            hideRecordBanner();
+            return;
+          }
+          var label = timestamp + " ｜25分の集中を記録しました";
           recordBannerText.textContent = label;
           recordBannerAction.textContent = "取り消す";
           recordBannerAction.disabled = false;
@@ -797,13 +810,19 @@
           return;
         }
         if (state.lastCanceledAt) {
-          recordBannerText.textContent = formatDateTime(state.lastCanceledAt) + " ｜記録を取り消しました";
+          var canceledAt = formatDateTime(state.lastCanceledAt);
+          if (!canceledAt) {
+            state.lastCanceledAt = 0;
+            hideRecordBanner();
+            return;
+          }
+          recordBannerText.textContent = canceledAt + " ｜記録を取り消しました";
           recordBannerAction.textContent = "取り消しました";
           recordBannerAction.disabled = true;
           recordBanner.hidden = false;
           return;
         }
-        recordBanner.hidden = true;
+        hideRecordBanner();
       }
 
       async function copyText(text){
@@ -1173,7 +1192,13 @@
       recordBannerAction.addEventListener("click", function(){
         if (recordBannerAction.disabled) return;
         var removed = removeLatestProvisional();
-        if (!removed) return;
+        if (!removed) {
+          state.lastCanceledAt = 0;
+          saveState();
+          renderRecordBanner();
+          showToast("記録が見つかりません");
+          return;
+        }
         state.lastCanceledAt = removed.recordedAt;
         saveState();
         renderLog();
