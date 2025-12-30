@@ -50,6 +50,48 @@
       display: grid;
       gap: 12px;
     }
+    .timer-card {
+      --phase-border: var(--border);
+      --phase-flash: rgba(37,99,235,0.25);
+      transition: background-color .25s ease, border-color .25s ease, box-shadow .25s ease;
+    }
+    body.phase-focus .timer-card {
+      --phase-border: rgba(37,99,235,0.25);
+      --phase-flash: rgba(37,99,235,0.28);
+      border-color: var(--phase-border);
+      box-shadow: 0 6px 18px rgba(37,99,235,0.08);
+    }
+    body.phase-rest .timer-card {
+      --phase-border: rgba(234,179,8,0.22);
+      --phase-flash: rgba(234,179,8,0.28);
+      background: rgba(234,179,8,0.08);
+      border-color: var(--phase-border);
+      box-shadow: 0 6px 18px rgba(234,179,8,0.06);
+    }
+    body.phase-long .timer-card {
+      --phase-border: rgba(16,185,129,0.22);
+      --phase-flash: rgba(16,185,129,0.28);
+      background: rgba(16,185,129,0.08);
+      border-color: var(--phase-border);
+      box-shadow: 0 6px 18px rgba(16,185,129,0.06);
+    }
+    .timer-card.flash {
+      animation: phase-flash 0.6s ease;
+    }
+    @keyframes phase-flash {
+      0% {
+        box-shadow: 0 0 0 0 var(--phase-flash);
+        border-color: var(--phase-border);
+      }
+      40% {
+        box-shadow: 0 0 0 10px var(--phase-flash);
+        border-color: var(--phase-border);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(0,0,0,0);
+        border-color: var(--phase-border);
+      }
+    }
 
     .phase-pill {
       display: inline-flex; align-items: center; gap: 8px;
@@ -74,9 +116,10 @@
     }
     .time .ss,
     .time .sep {
-      font-size: 0.65em;
+      font-size: 0.5em;
+      font-weight: 400;
       color: var(--text-sub);
-      opacity: 0.6;
+      opacity: 0.4;
     }
 
     .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -199,7 +242,7 @@
     "mainEntity":[
       {"@type":"Question","name":"ポモドーロテクニックは何分が基本？","acceptedAnswer":{"@type":"Answer","text":"一般的には「25分集中→5分休憩」をくり返し、4セットごとに長休憩を入れる形がよく使われます。"}},
       {"@type":"Question","name":"25分がきついときは？","acceptedAnswer":{"@type":"Answer","text":"最初は短め（例：20分）にしても続けやすいことがあります。無理のない範囲で調整してください。"}},
-      {"@type":"Question","name":"スマホで画面を消しても動く？","acceptedAnswer":{"@type":"Answer","text":"基本的に動作します。環境により通知の出方は異なるため、復帰時に完了状態を表示します。"}}
+      {"@type":"Question","name":"スマホで画面を消しても動く？","acceptedAnswer":{"@type":"Answer","text":"休憩中は基本的に継続しますが、集中中は離脱（タブ切替など）すると誤計測防止のため自動で一時停止します。"}}
     ]
   }
   </script>
@@ -214,7 +257,7 @@
 
     <section class="timer-shell" aria-label="タイマー">
       <div class="timer-face">
-        <div class="timer-core" role="group" aria-label="集中・休憩カード">
+        <div class="timer-core timer-card" role="group" aria-label="集中・休憩カード">
           <div>
             <div class="phase-pill" id="phasePill" aria-live="polite">
               <span class="phase-dot" aria-hidden="true"></span>
@@ -309,7 +352,7 @@
           <b>Q. 休憩を飛ばしてもいい？</b><br>
           A. 原則は休憩も含めて1セットですが、状況により休憩を飛ばしたいこともあります。疲れが残りやすい場合は休憩をおすすめします。<br><br>
           <b>Q. 画面を消しても動く？</b><br>
-          A. 基本的に動作します。通知の出方は端末・ブラウザで異なるため、復帰時に完了状態を表示します。
+          A. 休憩中は基本的に継続しますが、集中中は離脱（タブ切替など）すると誤計測防止のため自動で一時停止します。
         </div>
       </details>
     </section>
@@ -368,6 +411,7 @@
       var phaseLabel  = document.getElementById("phaseLabel");
       var phaseMeta   = document.getElementById("phaseMeta");
       var hintLine    = document.getElementById("hintLine");
+      var timerCard   = document.querySelector(".timer-card");
 
       var startPauseBtn = document.getElementById("startPauseBtn");
       var resetBtn      = document.getElementById("resetBtn");
@@ -684,9 +728,9 @@
       }
 
       async function setWakeLock(enabled){
-        state.wakeLockEnabled = enabled;
         if (!("wakeLock" in navigator)) {
           if (enabled) showToast("この端末では未対応です");
+          state.wakeLock = null;
           return;
         }
         try {
@@ -696,22 +740,38 @@
             showToast("画面スリープ抑止：ON");
           } else {
             if (state.wakeLock) await state.wakeLock.release();
-            state.wakeLock = null;
             showToast("画面スリープ抑止：OFF");
           }
         } catch(e) {
-          state.wakeLockEnabled = false;
-          wakeLockToggle.checked = false;
-          showToast("設定できませんでした");
+          state.wakeLock = null;
+          if (enabled) {
+            state.wakeLockEnabled = false;
+            wakeLockToggle.checked = false;
+            showToast("設定できませんでした");
+          }
+        } finally {
+          if (!enabled) state.wakeLock = null;
         }
       }
 
-      document.addEventListener("visibilitychange", function(){
-        if (document.visibilityState === "visible" && state.wakeLockEnabled && wakeLockToggle.checked) {
+      function handleVisibilityChange(isHidden){
+        if (isHidden) {
+          if (state.phase === PHASE_FOCUS && state.running) pause();
+          return;
+        }
+        if (state.running && state.wakeLockEnabled && wakeLockToggle.checked) {
           setWakeLock(true);
         }
         syncRemainingFromEndAt();
         render();
+      }
+
+      document.addEventListener("visibilitychange", function(){
+        handleVisibilityChange(document.visibilityState === "hidden");
+      });
+
+      window.addEventListener("pagehide", function(){
+        handleVisibilityChange(true);
       });
 
       function phaseDurationSec(phase){
@@ -736,8 +796,27 @@
         syncRemainingFromEndAt();
         state.running = false;
         state.endAt = 0;
+        setWakeLock(false);
         saveState();
         render();
+      }
+
+      function setPhaseClass(){
+        document.body.classList.remove("phase-focus", "phase-rest", "phase-long");
+        if (state.phase === PHASE_FOCUS) document.body.classList.add("phase-focus");
+        if (state.phase === PHASE_REST) document.body.classList.add("phase-rest");
+        if (state.phase === PHASE_LONG) document.body.classList.add("phase-long");
+      }
+
+      function triggerPhaseFlash(){
+        if (!timerCard) return;
+        timerCard.classList.remove("flash");
+        void timerCard.offsetWidth;
+        timerCard.classList.add("flash");
+        clearTimeout(triggerPhaseFlash._t);
+        triggerPhaseFlash._t = setTimeout(function(){
+          timerCard.classList.remove("flash");
+        }, 600);
       }
 
       function resetTimer(confirmFirst){
@@ -747,6 +826,7 @@
           state.phase = PHASE_FOCUS;
           state.remainingSec = DEFAULT_FOCUS_SEC;
           state.focusCount = 0;
+          setWakeLock(false);
           saveState();
           render();
           showToast("リセットしました");
@@ -770,6 +850,7 @@
             state.remainingSec = DEFAULT_FOCUS_SEC;
             state.running = false;
             state.endAt = 0;
+            setWakeLock(false);
             saveState();
             render();
             notifyDone("目標セット完了。ここまでおつかれさま。");
@@ -797,6 +878,7 @@
 
         saveState();
         render();
+        triggerPhaseFlash();
       }
 
       function tick(){
@@ -843,6 +925,7 @@
         longBreakToggle.checked = !!state.longBreakEnabled;
 
         document.body.classList.toggle("is-running", state.running);
+        setPhaseClass();
 
         saveState();
       }
@@ -857,6 +940,7 @@
           state.running = true;
           if (state.remainingSec <= 0) state.remainingSec = phaseDurationSec(state.phase);
           state.endAt = nowMs() + state.remainingSec * 1000;
+          if (wakeLockToggle.checked) setWakeLock(true);
           saveState();
           render();
           showToast("開始");
@@ -884,7 +968,12 @@
       });
 
       wakeLockToggle.addEventListener("change", function(){
-        setWakeLock(!!wakeLockToggle.checked);
+        state.wakeLockEnabled = !!wakeLockToggle.checked;
+        if (!state.wakeLockEnabled) {
+          setWakeLock(false);
+        } else if (state.running) {
+          setWakeLock(true);
+        }
       });
 
       Array.prototype.slice.call(document.querySelectorAll(".chip[data-goal]")).forEach(function(btn){
