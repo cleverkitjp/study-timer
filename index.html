@@ -215,6 +215,33 @@
     }
     .toast.show { opacity: 1; }
 
+    .record-banner {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(127,127,127,0.06);
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+    .record-banner strong { color: var(--text); }
+    .record-action {
+      border: none;
+      background: transparent;
+      color: var(--accent, #2563eb);
+      font-weight: 800;
+      cursor: pointer;
+      padding: 0;
+    }
+    .record-action[disabled] {
+      color: var(--text-sub);
+      cursor: default;
+    }
+
     @media (min-width: 560px) {
       .btn-row { grid-template-columns: 1fr 1fr 1fr; }
       .btn-row .btn.primary { grid-column: span 2; }
@@ -260,7 +287,7 @@
     "mainEntity":[
       {"@type":"Question","name":"ポモドーロテクニックは何分が基本？","acceptedAnswer":{"@type":"Answer","text":"一般的には「25分集中→5分休憩」をくり返し、4セットごとに長休憩を入れる形がよく使われます。"}},
       {"@type":"Question","name":"25分がきついときは？","acceptedAnswer":{"@type":"Answer","text":"最初は短め（例：20分）にしても続けやすいことがあります。無理のない範囲で調整してください。"}},
-      {"@type":"Question","name":"スマホで画面を消しても動く？","acceptedAnswer":{"@type":"Answer","text":"休憩中は基本的に継続しますが、集中中は離脱（タブ切替など）すると誤計測防止のため自動で一時停止します。"}}
+      {"@type":"Question","name":"スマホで画面を消しても動く？","acceptedAnswer":{"@type":"Answer","text":"はい。画面OFFや別タブでもタイマーは継続し、復帰時に表示が同期されます。"}}
     ]
   }
   </script>
@@ -296,6 +323,10 @@
             <button class="btn ghost" id="resetBtn">リセット</button>
             <button class="btn small" id="skipRestBtn" style="display:none;">休憩をスキップ</button>
           </div>
+        </div>
+        <div class="record-banner" id="recordBanner" hidden>
+          <div id="recordBannerText"></div>
+          <button class="record-action" id="recordBannerAction" type="button">取り消す</button>
         </div>
       </div>
     </section>
@@ -373,7 +404,7 @@
           <b>Q. 休憩を飛ばしてもいい？</b><br>
           A. 原則は休憩も含めて1セットですが、状況により休憩を飛ばしたいこともあります。疲れが残りやすい場合は休憩をおすすめします。<br><br>
           <b>Q. 画面を消しても動く？</b><br>
-          A. 休憩中は基本的に継続しますが、集中中は離脱（タブ切替など）すると誤計測防止のため自動で一時停止します。
+          A. はい。画面OFFや別タブでもタイマーは継続し、復帰時に表示が同期されます。
         </div>
       </details>
     </section>
@@ -425,7 +456,8 @@
         longBreakEnabled: true,
         wakeLockEnabled: false,
         wakeLock: null,
-        audioArmed: false
+        audioArmed: false,
+        lastCanceledAt: 0
       };
 
       var timeDisplay = document.getElementById("timeDisplay");
@@ -438,6 +470,9 @@
       var startPauseBtn = document.getElementById("startPauseBtn");
       var resetBtn      = document.getElementById("resetBtn");
       var skipRestBtn   = document.getElementById("skipRestBtn");
+      var recordBanner = document.getElementById("recordBanner");
+      var recordBannerText = document.getElementById("recordBannerText");
+      var recordBannerAction = document.getElementById("recordBannerAction");
 
       var longBreakToggle = document.getElementById("longBreakToggle");
       var wakeLockToggle  = document.getElementById("wakeLockToggle");
@@ -508,6 +543,7 @@
 
         state.goalSets = (typeof data.goalSets === "number") ? data.goalSets : 0;
         state.longBreakEnabled = (typeof data.longBreakEnabled === "boolean") ? data.longBreakEnabled : true;
+        state.lastCanceledAt = (typeof data.lastCanceledAt === "number") ? data.lastCanceledAt : 0;
 
         if (data && data.timer && typeof data.timer === "object") {
           var t = data.timer;
@@ -525,12 +561,7 @@
 
         if (state.running && state.endAt > 0) {
           var rem = Math.ceil((state.endAt - nowMs()) / 1000);
-          if (rem <= 0) {
-            state.running = false;
-            state.remainingSec = 0;
-          } else {
-            state.remainingSec = rem;
-          }
+          state.remainingSec = rem;
         }
       }
 
@@ -538,6 +569,7 @@
         var payload = {
           goalSets: state.goalSets,
           longBreakEnabled: state.longBreakEnabled,
+          lastCanceledAt: state.lastCanceledAt,
           timer: {
             phase: state.phase,
             running: state.running,
@@ -549,34 +581,86 @@
         localStorage.setItem(LS_KEY, JSON.stringify(payload));
       }
 
-      function loadLog(){
+      function normalizeLogEntries(raw){
+        var entries = [];
+        if (Array.isArray(raw)) {
+          entries = raw;
+        } else if (raw && Array.isArray(raw.entries)) {
+          entries = raw.entries;
+        } else if (raw && typeof raw === "object") {
+          Object.keys(raw).forEach(function(dateKey){
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) return;
+            var sec = raw[dateKey];
+            if (typeof sec !== "number") return;
+            var d = new Date(dateKey + "T00:00:00");
+            entries.push({ seconds: sec, recordedAt: d.getTime(), provisional: false });
+          });
+        }
+        return entries
+          .map(function(entry){
+            if (!entry || typeof entry !== "object") return null;
+            var seconds = (typeof entry.seconds === "number") ? entry.seconds : 0;
+            var recordedAt = entry.recordedAt;
+            if (typeof recordedAt === "string") recordedAt = Date.parse(recordedAt);
+            if (typeof recordedAt !== "number" || !isFinite(recordedAt)) recordedAt = nowMs();
+            var provisional = !!entry.provisional;
+            return { seconds: seconds, recordedAt: recordedAt, provisional: provisional };
+          })
+          .filter(function(entry){ return entry && entry.seconds > 0; })
+          .sort(function(a, b){ return a.recordedAt - b.recordedAt; });
+      }
+
+      function loadLogEntries(){
         var raw = localStorage.getItem(LS_LOG_KEY);
-        var obj = raw ? safeJSONParse(raw, {}) : {};
-        if (!obj || typeof obj !== "object") obj = {};
-        return obj;
+        if (!raw) return [];
+        var data = safeJSONParse(raw, null);
+        return normalizeLogEntries(data);
       }
 
-      function saveLog(obj){
-        localStorage.setItem(LS_LOG_KEY, JSON.stringify(obj));
+      function saveLogEntries(entries){
+        localStorage.setItem(LS_LOG_KEY, JSON.stringify({ entries: entries }));
       }
 
-      function addFocusToLog(seconds){
-        if (seconds <= 0) return;
-        var log = loadLog();
-        var key = getLocalISODate(new Date());
-        log[key] = (log[key] || 0) + seconds;
-        saveLog(log);
+      function addProvisionalFocusLog(recordedAtMs){
+        var entries = loadLogEntries();
+        entries.push({ seconds: DEFAULT_FOCUS_SEC, recordedAt: recordedAtMs, provisional: true });
+        state.lastCanceledAt = 0;
+        saveLogEntries(entries);
         renderLog();
       }
 
-      function sumLogBetween(log, startDate, endDateExclusive){
-        var total = 0;
-        var d = new Date(startDate.getTime());
-        while (d < endDateExclusive) {
-          var key = getLocalISODate(d);
-          total += (log[key] || 0);
-          d.setDate(d.getDate() + 1);
+      function confirmLatestProvisional(){
+        var entries = loadLogEntries();
+        for (var i = entries.length - 1; i >= 0; i--) {
+          if (entries[i].provisional) {
+            entries[i].provisional = false;
+            saveLogEntries(entries);
+            return;
+          }
         }
+      }
+
+      function removeLatestProvisional(){
+        var entries = loadLogEntries();
+        for (var i = entries.length - 1; i >= 0; i--) {
+          if (entries[i].provisional) {
+            var removed = entries.splice(i, 1)[0];
+            saveLogEntries(entries);
+            return removed;
+          }
+        }
+        return null;
+      }
+
+      function sumEntriesBetween(entries, startDate, endDateExclusive){
+        var total = 0;
+        var startMs = startDate.getTime();
+        var endMs = endDateExclusive.getTime();
+        entries.forEach(function(entry){
+          if (entry.recordedAt >= startMs && entry.recordedAt < endMs) {
+            total += entry.seconds;
+          }
+        });
         return total;
       }
 
@@ -585,19 +669,19 @@
       }
 
       function renderLog(){
-        var log = loadLog();
+        var entries = loadLogEntries();
 
         var today = new Date();
         today.setHours(0,0,0,0);
         var tomorrow = new Date(today.getTime()); tomorrow.setDate(tomorrow.getDate() + 1);
-        var todaySec = sumLogBetween(log, today, tomorrow);
+        var todaySec = sumEntriesBetween(entries, today, tomorrow);
 
         var ws = weekStartISO(new Date());
         var wsNext = new Date(ws.getTime()); wsNext.setDate(wsNext.getDate() + 7);
         var lastWs = new Date(ws.getTime()); lastWs.setDate(lastWs.getDate() - 7);
 
-        var thisWeekSec = sumLogBetween(log, ws, wsNext);
-        var lastWeekSec = sumLogBetween(log, lastWs, ws);  // ★ここが切れていた行です
+        var thisWeekSec = sumEntriesBetween(entries, ws, wsNext);
+        var lastWeekSec = sumEntriesBetween(entries, lastWs, ws);
 
         kpiToday.textContent = toHours1(todaySec) + "時間";
         kpiThisWeek.textContent = toHours1(thisWeekSec) + "時間";
@@ -605,10 +689,10 @@
 
         monthList.innerHTML = "";
         var months = {};
-        Object.keys(log).forEach(function(dateKey){
-          if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) return;
-          var mkey = dateKey.slice(0,7);
-          months[mkey] = (months[mkey] || 0) + (log[dateKey] || 0);
+        entries.forEach(function(entry){
+          var key = getLocalISODate(new Date(entry.recordedAt));
+          var mkey = key.slice(0,7);
+          months[mkey] = (months[mkey] || 0) + entry.seconds;
         });
 
         var hasAny = Object.keys(months).length > 0;
@@ -638,7 +722,7 @@
       }
 
       function buildCopyText(){
-        var log = loadLog();
+        var entries = loadLogEntries();
 
         var today = new Date(); today.setHours(0,0,0,0);
         var tomorrow = new Date(today.getTime()); tomorrow.setDate(tomorrow.getDate() + 1);
@@ -647,15 +731,15 @@
         var wsNext = new Date(ws.getTime()); wsNext.setDate(wsNext.getDate() + 7);
         var lastWs = new Date(ws.getTime()); lastWs.setDate(lastWs.getDate() - 7);
 
-        var todaySec = sumLogBetween(log, today, tomorrow);
-        var thisWeekSec = sumLogBetween(log, ws, wsNext);
-        var lastWeekSec = sumLogBetween(log, lastWs, ws);
+        var todaySec = sumEntriesBetween(entries, today, tomorrow);
+        var thisWeekSec = sumEntriesBetween(entries, ws, wsNext);
+        var lastWeekSec = sumEntriesBetween(entries, lastWs, ws);
 
         var months = {};
-        Object.keys(log).forEach(function(dateKey){
-          if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) return;
-          var mkey = dateKey.slice(0,7);
-          months[mkey] = (months[mkey] || 0) + (log[dateKey] || 0);
+        entries.forEach(function(entry){
+          var key = getLocalISODate(new Date(entry.recordedAt));
+          var mkey = key.slice(0,7);
+          months[mkey] = (months[mkey] || 0) + entry.seconds;
         });
 
         var lines = [];
@@ -682,6 +766,44 @@
           d.setMonth(d.getMonth() - 1);
         }
         return lines.join("\n");
+      }
+
+      function formatDateTime(ms){
+        var d = new Date(ms);
+        var y = d.getFullYear();
+        var m = pad2(d.getMonth() + 1);
+        var day = pad2(d.getDate());
+        var hh = pad2(d.getHours());
+        var mm = pad2(d.getMinutes());
+        return y + "/" + m + "/" + day + " " + hh + ":" + mm;
+      }
+
+      function getLatestProvisionalEntry(entries){
+        for (var i = entries.length - 1; i >= 0; i--) {
+          if (entries[i].provisional) return entries[i];
+        }
+        return null;
+      }
+
+      function renderRecordBanner(){
+        var entries = loadLogEntries();
+        var latest = getLatestProvisionalEntry(entries);
+        if (latest) {
+          var label = formatDateTime(latest.recordedAt) + " ｜25分の集中を記録しました";
+          recordBannerText.textContent = label;
+          recordBannerAction.textContent = "取り消す";
+          recordBannerAction.disabled = false;
+          recordBanner.hidden = false;
+          return;
+        }
+        if (state.lastCanceledAt) {
+          recordBannerText.textContent = formatDateTime(state.lastCanceledAt) + " ｜記録を取り消しました";
+          recordBannerAction.textContent = "取り消しました";
+          recordBannerAction.disabled = true;
+          recordBanner.hidden = false;
+          return;
+        }
+        recordBanner.hidden = true;
       }
 
       async function copyText(text){
@@ -777,13 +899,11 @@
       }
 
       function handleVisibilityChange(isHidden){
-        if (isHidden) {
-          if (state.phase === PHASE_FOCUS && state.running) pause();
-          return;
-        }
+        if (isHidden) return;
         if (state.running && state.wakeLockEnabled && wakeLockToggle.checked) {
           setWakeLock(true);
         }
+        advanceCurrentPhaseOnceIfOverdue();
         syncRemainingFromEndAt();
         render();
       }
@@ -842,6 +962,7 @@
           state.phase = PHASE_FOCUS;
           state.remainingSec = DEFAULT_FOCUS_SEC;
           state.focusCount = 0;
+          state.lastCanceledAt = 0;
           setWakeLock(false);
           saveState();
           render();
@@ -854,11 +975,18 @@
         }
       }
 
-      function goNextPhase(){
+      function finalizeProvisionalOnFocusStart(){
+        confirmLatestProvisional();
+        state.lastCanceledAt = 0;
+      }
+
+      function completeCurrentPhaseOnce(recordedAtMs, nextPhaseStartMs){
         var prev = state.phase;
+        var recordedAt = (typeof recordedAtMs === "number") ? recordedAtMs : nowMs();
+        var nextStart = (typeof nextPhaseStartMs === "number") ? nextPhaseStartMs : recordedAt;
 
         if (prev === PHASE_FOCUS) {
-          addFocusToLog(DEFAULT_FOCUS_SEC);
+          addProvisionalFocusLog(recordedAt);
           state.focusCount += 1;
 
           if (state.goalSets > 0 && state.focusCount >= state.goalSets) {
@@ -884,17 +1012,27 @@
             notifyDone("25分おつかれさま。5分休憩しよう。");
           }
         } else {
+          finalizeProvisionalOnFocusStart();
           state.phase = PHASE_FOCUS;
           state.remainingSec = DEFAULT_FOCUS_SEC;
           notifyDone("休憩おわり。次の25分、いこう。");
         }
 
-        if (state.running) state.endAt = nowMs() + state.remainingSec * 1000;
+        if (state.running) state.endAt = nextStart + state.remainingSec * 1000;
         else state.endAt = 0;
 
         saveState();
         render();
         triggerPhaseFlash();
+      }
+
+      function advanceCurrentPhaseOnceIfOverdue(){
+        if (!state.running || state.endAt <= 0) return;
+        var now = nowMs();
+        if (now >= state.endAt) {
+          state.remainingSec = 0;
+          completeCurrentPhaseOnce(state.endAt, now);
+        }
       }
 
       function tick(){
@@ -903,7 +1041,8 @@
 
         if (state.remainingSec <= 0) {
           state.remainingSec = 0;
-          goNextPhase();
+          var now = nowMs();
+          completeCurrentPhaseOnce(now, now);
           return;
         }
         renderTimeOnly();
@@ -950,6 +1089,7 @@
         document.body.classList.toggle("is-running", state.running);
         setPhaseClass();
 
+        renderRecordBanner();
         saveState();
       }
 
@@ -960,6 +1100,9 @@
           pause();
           showToast("一時停止");
         } else {
+          if (state.phase === PHASE_FOCUS) {
+            finalizeProvisionalOnFocusStart();
+          }
           state.running = true;
           if (state.remainingSec <= 0) state.remainingSec = phaseDurationSec(state.phase);
           state.endAt = nowMs() + state.remainingSec * 1000;
@@ -978,7 +1121,10 @@
         if (!(state.phase === PHASE_REST || state.phase === PHASE_LONG)) return;
         state.phase = PHASE_FOCUS;
         state.remainingSec = DEFAULT_FOCUS_SEC;
-        if (state.running) state.endAt = nowMs() + state.remainingSec * 1000;
+        if (state.running) {
+          finalizeProvisionalOnFocusStart();
+          state.endAt = nowMs() + state.remainingSec * 1000;
+        }
         saveState();
         render();
         showToast("休憩をスキップ");
@@ -1018,8 +1164,21 @@
       resetLogBtn.addEventListener("click", function(){
         if (!confirm("これまでの勉強ログをすべて削除します。元に戻せません。")) return;
         localStorage.removeItem(LS_LOG_KEY);
+        state.lastCanceledAt = 0;
+        saveState();
         renderLog();
         showToast("ログをリセットしました");
+      });
+
+      recordBannerAction.addEventListener("click", function(){
+        if (recordBannerAction.disabled) return;
+        var removed = removeLatestProvisional();
+        if (!removed) return;
+        state.lastCanceledAt = removed.recordedAt;
+        saveState();
+        renderLog();
+        render();
+        showToast("記録を取り消しました");
       });
 
       loadState();
@@ -1033,8 +1192,9 @@
         longBreakToggle.checked = !!state.longBreakEnabled;
       })();
 
-      if (state.remainingSec <= 0) state.remainingSec = phaseDurationSec(state.phase);
+      if (!state.running && state.remainingSec <= 0) state.remainingSec = phaseDurationSec(state.phase);
 
+      advanceCurrentPhaseOnceIfOverdue();
       renderLog();
       render();
 
