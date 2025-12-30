@@ -53,17 +53,20 @@
     .timer-card {
       --phase-border: var(--border);
       --phase-flash: rgba(255,255,255,0.95);
+      --phase-flash-bg: rgba(255,255,255,0.18);
       transition: background-color .25s ease, border-color .25s ease, box-shadow .25s ease;
     }
     body.phase-focus .timer-card {
       --phase-border: rgba(37,99,235,0.25);
       --phase-flash: rgba(37,99,235,0.28);
+      --phase-flash-bg: rgba(37,99,235,0.22);
       background: rgba(37,99,235,0.08);
       border-color: var(--phase-border);
       box-shadow: 0 6px 18px rgba(37,99,235,0.08);
     }
     body.phase-rest .timer-card {
       --phase-border: rgba(29,78,216,0.45);
+      --phase-flash-bg: rgba(29,78,216,0.28);
       background: rgba(29,78,216,0.16);
       border-color: var(--phase-border);
       box-shadow: 0 6px 18px rgba(29,78,216,0.12);
@@ -71,36 +74,53 @@
     body.phase-long .timer-card {
       --phase-border: rgba(16,185,129,0.22);
       --phase-flash: rgba(16,185,129,0.28);
+      --phase-flash-bg: rgba(16,185,129,0.2);
       background: rgba(16,185,129,0.08);
       border-color: var(--phase-border);
       box-shadow: 0 6px 18px rgba(16,185,129,0.06);
     }
     .timer-card.flash {
-      animation: phase-flash 0.45s ease;
+      animation: phase-flash 1.8s ease-in-out;
     }
     @keyframes phase-flash {
       0% {
         box-shadow: 0 0 0 0 rgba(255,255,255,0);
+        background-color: inherit;
         border-color: var(--phase-border);
       }
       10% {
         box-shadow: 0 0 0 12px var(--phase-flash);
+        background-color: var(--phase-flash-bg);
         border-color: #fff;
       }
       20% {
         box-shadow: 0 0 0 0 rgba(255,255,255,0);
+        background-color: inherit;
         border-color: var(--phase-border);
       }
-      30% {
+      35% {
         box-shadow: 0 0 0 12px var(--phase-flash);
+        background-color: var(--phase-flash-bg);
         border-color: #fff;
       }
-      40% {
+      45% {
         box-shadow: 0 0 0 0 rgba(255,255,255,0);
+        background-color: inherit;
+        border-color: var(--phase-border);
+      }
+      60% {
+        box-shadow: 0 0 0 12px var(--phase-flash);
+        background-color: var(--phase-flash-bg);
+        border-color: #fff;
+      }
+      70% {
+        box-shadow: 0 0 0 0 rgba(255,255,255,0);
+        background-color: inherit;
         border-color: var(--phase-border);
       }
       100% {
         box-shadow: 0 0 0 0 rgba(255,255,255,0);
+        background-color: inherit;
         border-color: var(--phase-border);
       }
     }
@@ -981,7 +1001,7 @@
         clearTimeout(triggerPhaseFlash._t);
         triggerPhaseFlash._t = setTimeout(function(){
           timerCard.classList.remove("flash");
-        }, 450);
+        }, 1800);
       }
 
       function resetTimer(confirmFirst){
