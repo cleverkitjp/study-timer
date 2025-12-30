@@ -797,6 +797,11 @@
             return;
           }
           var label = timestamp + " ｜25分の集中を記録しました";
+          if (!label.trim()) {
+            recordBanner.hidden = true;
+            recordBannerAction.disabled = true;
+            return;
+          }
           recordBannerText.textContent = label;
           recordBannerAction.textContent = "取り消す";
           recordBannerAction.disabled = false;
@@ -811,7 +816,14 @@
             recordBannerAction.disabled = true;
             return;
           }
-          recordBannerText.textContent = canceledAt + " ｜記録を取り消しました";
+          var canceledLabel = canceledAt + " ｜記録を取り消しました";
+          if (!canceledLabel.trim()) {
+            state.lastCanceledAt = 0;
+            recordBanner.hidden = true;
+            recordBannerAction.disabled = true;
+            return;
+          }
+          recordBannerText.textContent = canceledLabel;
           recordBannerAction.textContent = "取り消しました";
           recordBannerAction.disabled = true;
           recordBanner.hidden = false;
