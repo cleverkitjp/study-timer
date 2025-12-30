@@ -159,11 +159,12 @@
 }
 
     body.is-running .hero,
-    body.is-running details:not(#logDetails) {
-      opacity: 0.45;
+    body.is-running details:not(#logDetails),
+    body.is-running .outside-card {
+      opacity: 0.35;
     }
     body.is-running #logDetails {
-      opacity: 0.5;
+      opacity: 0.4;
     }
     body.is-running #timeDisplay,
     body.is-running #phasePill,
@@ -211,7 +212,6 @@
           </div>
 
           <div class="time" id="timeDisplay">25:00</div>
-          <div class="muted" id="hintLine">すぐ開始できます（設定は最小限）。</div>
 
           <div class="btn-row" role="group" aria-label="操作">
             <button class="btn primary" id="startPauseBtn">開始</button>
@@ -221,7 +221,9 @@
         </div>
       </div>
 
-        <div class="controls">
+        <div class="muted outside-card" id="hintLine">すぐ開始できます（設定は最小限）。</div>
+
+        <div class="controls outside-card">
           <div class="grid2">
             <div>
               <div class="muted">目標セット</div>
