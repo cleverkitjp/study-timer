@@ -101,6 +101,12 @@
       width: fit-content;
       font-weight: 700;
     }
+    #phaseLabel { display: inline-flex; align-items: baseline; gap: 6px; }
+    .phase-sub {
+      font-size: 0.65em;
+      color: var(--text-sub);
+      font-weight: 400;
+    }
     .phase-dot { width: 10px; height: 10px; border-radius: 999px; background: currentColor; opacity: 0.8; }
     .phase-meta { color: var(--text-sub); font-size: 12px; margin-top: 2px; }
 
@@ -261,7 +267,10 @@
           <div>
             <div class="phase-pill" id="phasePill" aria-live="polite">
               <span class="phase-dot" aria-hidden="true"></span>
-              <span id="phaseLabel">集中</span>
+              <span id="phaseLabel">
+                <span class="phase-main" id="phaseMain">集中</span>
+                <span class="phase-sub" id="phaseSub">1セット目</span>
+              </span>
             </div>
             <div class="phase-meta" id="phaseMeta">セット 1 / 4（長休憩まで）</div>
           </div>
@@ -408,7 +417,8 @@
       };
 
       var timeDisplay = document.getElementById("timeDisplay");
-      var phaseLabel  = document.getElementById("phaseLabel");
+      var phaseMain  = document.getElementById("phaseMain");
+      var phaseSub   = document.getElementById("phaseSub");
       var phaseMeta   = document.getElementById("phaseMeta");
       var hintLine    = document.getElementById("hintLine");
       var timerCard   = document.querySelector(".timer-card");
@@ -780,12 +790,6 @@
         return DEFAULT_LONG_SEC;
       }
 
-      function phaseName(phase){
-        if (phase === PHASE_FOCUS) return "集中";
-        if (phase === PHASE_REST) return "休憩";
-        return "長休憩";
-      }
-
       function syncRemainingFromEndAt(){
         if (!state.running) return;
         var rem = Math.ceil((state.endAt - nowMs()) / 1000);
@@ -900,7 +904,14 @@
       function render(){
         if (state.running) syncRemainingFromEndAt();
 
-        phaseLabel.textContent = phaseName(state.phase);
+        var nextSetNumber = state.focusCount + 1;
+        if (state.phase === PHASE_FOCUS) {
+          phaseMain.textContent = "集中";
+          phaseSub.textContent = nextSetNumber + "セット目";
+        } else {
+          phaseMain.textContent = "休憩";
+          phaseSub.textContent = "次は" + nextSetNumber + "セット目";
+        }
 
         var inCycle = (state.focusCount % LONG_BREAK_EVERY) + 1;
         var metaText = state.longBreakEnabled
