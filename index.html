@@ -357,7 +357,7 @@
               </label>
               <label class="chip" style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
                 <span>画面を点けたまま（対応端末）</span>
-                <input id="wakeLockToggle" type="checkbox" />
+                <input id="wakeLockToggle" type="checkbox" checked />
               </label>
             </div>
           </div>
@@ -457,7 +457,7 @@
         focusCount: 0,
         goalSets: 0,
         longBreakEnabled: true,
-        wakeLockEnabled: false,
+        wakeLockEnabled: true,
         wakeLock: null,
         audioArmed: false,
         lastCanceledAt: 0
@@ -547,6 +547,7 @@
         state.goalSets = (typeof data.goalSets === "number") ? data.goalSets : 0;
         state.longBreakEnabled = (typeof data.longBreakEnabled === "boolean") ? data.longBreakEnabled : true;
         state.lastCanceledAt = (typeof data.lastCanceledAt === "number") ? data.lastCanceledAt : 0;
+        state.wakeLockEnabled = (typeof data.wakeLockEnabled === "boolean") ? data.wakeLockEnabled : state.wakeLockEnabled;
 
         if (data && data.timer && typeof data.timer === "object") {
           var t = data.timer;
@@ -573,6 +574,7 @@
           goalSets: state.goalSets,
           longBreakEnabled: state.longBreakEnabled,
           lastCanceledAt: state.lastCanceledAt,
+          wakeLockEnabled: state.wakeLockEnabled,
           timer: {
             phase: state.phase,
             running: state.running,
@@ -1114,6 +1116,7 @@
         hintLine.classList.toggle("is-muted", !isRest);
 
         longBreakToggle.checked = !!state.longBreakEnabled;
+        wakeLockToggle.checked = !!state.wakeLockEnabled;
 
         document.body.classList.toggle("is-running", state.running);
         setPhaseClass();
