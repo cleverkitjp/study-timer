@@ -52,7 +52,7 @@
     }
     .timer-card {
       --phase-border: var(--border);
-      --phase-flash: rgba(37,99,235,0.25);
+      --phase-flash: rgba(255,255,255,0.95);
       transition: background-color .25s ease, border-color .25s ease, box-shadow .25s ease;
     }
     body.phase-focus .timer-card {
@@ -63,11 +63,10 @@
       box-shadow: 0 6px 18px rgba(37,99,235,0.08);
     }
     body.phase-rest .timer-card {
-      --phase-border: rgba(234,179,8,0.22);
-      --phase-flash: rgba(234,179,8,0.28);
-      background: rgba(234,179,8,0.08);
+      --phase-border: rgba(29,78,216,0.45);
+      background: rgba(29,78,216,0.16);
       border-color: var(--phase-border);
-      box-shadow: 0 6px 18px rgba(234,179,8,0.06);
+      box-shadow: 0 6px 18px rgba(29,78,216,0.12);
     }
     body.phase-long .timer-card {
       --phase-border: rgba(16,185,129,0.22);
@@ -77,19 +76,31 @@
       box-shadow: 0 6px 18px rgba(16,185,129,0.06);
     }
     .timer-card.flash {
-      animation: phase-flash 0.6s ease;
+      animation: phase-flash 0.45s ease;
     }
     @keyframes phase-flash {
       0% {
-        box-shadow: 0 0 0 0 var(--phase-flash);
+        box-shadow: 0 0 0 0 rgba(255,255,255,0);
         border-color: var(--phase-border);
       }
+      10% {
+        box-shadow: 0 0 0 12px var(--phase-flash);
+        border-color: #fff;
+      }
+      20% {
+        box-shadow: 0 0 0 0 rgba(255,255,255,0);
+        border-color: var(--phase-border);
+      }
+      30% {
+        box-shadow: 0 0 0 12px var(--phase-flash);
+        border-color: #fff;
+      }
       40% {
-        box-shadow: 0 0 0 10px var(--phase-flash);
+        box-shadow: 0 0 0 0 rgba(255,255,255,0);
         border-color: var(--phase-border);
       }
       100% {
-        box-shadow: 0 0 0 0 rgba(0,0,0,0);
+        box-shadow: 0 0 0 0 rgba(255,255,255,0);
         border-color: var(--phase-border);
       }
     }
@@ -821,7 +832,7 @@
         clearTimeout(triggerPhaseFlash._t);
         triggerPhaseFlash._t = setTimeout(function(){
           timerCard.classList.remove("flash");
-        }, 600);
+        }, 450);
       }
 
       function resetTimer(confirmFirst){
