@@ -231,7 +231,7 @@
     .controls { display: grid; gap: 10px; margin-top: 6px; }
     .outside-card-area { display: grid; gap: 10px; margin-top: 10px; }
     #hintLine { margin-bottom: 16px; }
-    .chip-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip-row { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
     .chip {
       border: 1px solid var(--border);
       border-radius: 999px;
@@ -436,9 +436,9 @@
           <div>
             <div class="muted">目標セット</div>
             <div class="chip-row" role="group" aria-label="目標セット">
-              <button class="chip" data-goal="0" aria-pressed="true">目標なし</button><br>
-              <button class="chip" data-goal="4" aria-pressed="false">4セット</button><br>
-              <button class="chip" data-goal="8" aria-pressed="false">8セット</button><br>
+              <button class="chip" data-goal="0" aria-pressed="true">目標なし</button>
+              <button class="chip" data-goal="4" aria-pressed="false">4セット</button>
+              <button class="chip" data-goal="8" aria-pressed="false">8セット</button>
               <button class="chip" data-goal="12" aria-pressed="false">12セット</button>
             </div>
           </div>
