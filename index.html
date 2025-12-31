@@ -1317,10 +1317,11 @@
         }
 
         var inCycle = (state.focusCount % LONG_BREAK_EVERY) + 1;
-        var metaText = state.longBreakEnabled
-          ? ("セット " + inCycle + " / " + LONG_BREAK_EVERY + "（長休憩まで）")
-          : ("セット " + state.focusCount);
-        phaseMeta.textContent = metaText;
+        var metaText = "セット " + inCycle + " / " + LONG_BREAK_EVERY + "（長休憩まで）";
+        var showSetCount = !!state.longBreakEnabled;
+        phaseSub.hidden = !showSetCount;
+        phaseMeta.hidden = !showSetCount;
+        phaseMeta.textContent = showSetCount ? metaText : "";
 
         renderTimeOnly();
 
