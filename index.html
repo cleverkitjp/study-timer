@@ -80,34 +80,50 @@
       box-shadow: 0 6px 18px rgba(16,185,129,0.06);
     }
     .timer-card.flash {
-      animation: phase-flash 1.8s ease-in-out;
+      animation: phase-flash 2s ease-in-out;
     }
     @keyframes phase-flash {
       0% {
         background-color: inherit;
         border-color: var(--phase-border);
       }
-      10% {
+      8% {
         background-color: var(--phase-flash-bg);
         border-color: var(--phase-flash);
       }
-      20% {
+      16% {
         background-color: inherit;
         border-color: var(--phase-border);
       }
-      35% {
+      28% {
         background-color: var(--phase-flash-bg);
         border-color: var(--phase-flash);
       }
-      45% {
+      36% {
         background-color: inherit;
         border-color: var(--phase-border);
       }
-      60% {
+      48% {
         background-color: var(--phase-flash-bg);
         border-color: var(--phase-flash);
       }
-      70% {
+      56% {
+        background-color: inherit;
+        border-color: var(--phase-border);
+      }
+      68% {
+        background-color: var(--phase-flash-bg);
+        border-color: var(--phase-flash);
+      }
+      76% {
+        background-color: inherit;
+        border-color: var(--phase-border);
+      }
+      88% {
+        background-color: var(--phase-flash-bg);
+        border-color: var(--phase-flash);
+      }
+      96% {
         background-color: inherit;
         border-color: var(--phase-border);
       }
@@ -115,6 +131,32 @@
         background-color: inherit;
         border-color: var(--phase-border);
       }
+    }
+
+    .phase-flash-screen {
+      position: fixed;
+      inset: 0;
+      background: #ffffff;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 10000;
+    }
+    .phase-flash-screen.is-flashing {
+      animation: screen-flash 2s ease-in-out;
+    }
+    @keyframes screen-flash {
+      0% { opacity: 0; }
+      5% { opacity: 1; }
+      10% { opacity: 0; }
+      15% { opacity: 1; }
+      20% { opacity: 0; }
+      25% { opacity: 1; }
+      30% { opacity: 0; }
+      35% { opacity: 1; }
+      40% { opacity: 0; }
+      45% { opacity: 1; }
+      50% { opacity: 0; }
+      100% { opacity: 0; }
     }
 
     .phase-pill {
@@ -341,6 +383,7 @@
 </head>
 
 <body>
+  <div class="phase-flash-screen" id="phaseFlashScreen" aria-hidden="true"></div>
   <main class="wrap">
     <header class="hero">
       <h1>勉強用ポモドーロタイマー</h1>
@@ -533,6 +576,7 @@
       var phaseMeta   = document.getElementById("phaseMeta");
       var hintLine    = document.getElementById("hintLine");
       var timerCard   = document.querySelector(".timer-card");
+      var phaseFlashScreen = document.getElementById("phaseFlashScreen");
 
       var startPauseBtn = document.getElementById("startPauseBtn");
       var resetBtn      = document.getElementById("resetBtn");
@@ -1131,14 +1175,25 @@
       }
 
       function triggerPhaseFlash(){
-        if (!timerCard) return;
-        timerCard.classList.remove("flash");
-        void timerCard.offsetWidth;
-        timerCard.classList.add("flash");
-        clearTimeout(triggerPhaseFlash._t);
-        triggerPhaseFlash._t = setTimeout(function(){
+        if (timerCard) {
           timerCard.classList.remove("flash");
-        }, 1800);
+          void timerCard.offsetWidth;
+          timerCard.classList.add("flash");
+          clearTimeout(triggerPhaseFlash._t);
+          triggerPhaseFlash._t = setTimeout(function(){
+            timerCard.classList.remove("flash");
+          }, 2000);
+        }
+
+        if (phaseFlashScreen) {
+          phaseFlashScreen.classList.remove("is-flashing");
+          void phaseFlashScreen.offsetWidth;
+          phaseFlashScreen.classList.add("is-flashing");
+          clearTimeout(triggerPhaseFlash._s);
+          triggerPhaseFlash._s = setTimeout(function(){
+            phaseFlashScreen.classList.remove("is-flashing");
+          }, 2000);
+        }
       }
 
       function resetTimer(confirmFirst){
