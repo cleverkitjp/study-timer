@@ -397,6 +397,7 @@
           <div class="kpi"><span>今週</span><b id="kpiThisWeek">0.0時間</b></div>
           <div class="kpi"><span>先週</span><b id="kpiLastWeek">0.0時間</b></div>
         </div>
+        <div class="muted">※「今日」は午前4時で切り替わります</div>
 
         <ol class="log-list" id="monthList" aria-label="月別ログ"></ol>
 
@@ -458,6 +459,8 @@
       var DEFAULT_LONG_SEC  = 15 * 60;
 
       var LONG_BREAK_EVERY = 4;
+      var DAY_RESET_HOUR = 4;
+      var DAY_RESET_MS = DAY_RESET_HOUR * 60 * 60 * 1000;
       var LS_KEY = "ck_pomodoro_v1";
       var LS_LOG_KEY = "ck_pomodoro_log_v1"; // { "YYYY-MM-DD": secondsFocused }
 
@@ -472,7 +475,8 @@
         wakeLockEnabled: false,
         wakeLock: null,
         audioArmed: false,
-        lastCanceledAt: 0
+        lastCanceledAt: 0,
+        lastDayKey: ""
       };
 
       var timeDisplay = document.getElementById("timeDisplay");
@@ -532,6 +536,14 @@
         return y + "-" + m + "-" + day;
       }
 
+      function getShiftedDate(ms){
+        return new Date(ms - DAY_RESET_MS);
+      }
+
+      function getDayKeyByReset(ms){
+        return getLocalISODate(getShiftedDate(ms));
+      }
+
       function weekStartISO(d){
         var dd = new Date(d.getFullYear(), d.getMonth(), d.getDate());
         var day = dd.getDay(); // 0 Sun ... 6 Sat
@@ -559,6 +571,7 @@
         state.goalSets = (typeof data.goalSets === "number") ? data.goalSets : 0;
         state.longBreakEnabled = (typeof data.longBreakEnabled === "boolean") ? data.longBreakEnabled : true;
         state.lastCanceledAt = (typeof data.lastCanceledAt === "number") ? data.lastCanceledAt : 0;
+        state.lastDayKey = (typeof data.lastDayKey === "string") ? data.lastDayKey : "";
 
         if (data && data.timer && typeof data.timer === "object") {
           var t = data.timer;
@@ -591,7 +604,8 @@
             endAt: state.endAt,
             remainingSec: state.remainingSec,
             focusCount: state.focusCount
-          }
+          },
+          lastDayKey: state.lastDayKey
         };
         localStorage.setItem(LS_KEY, JSON.stringify(payload));
       }
@@ -607,7 +621,7 @@
             if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) return;
             var sec = raw[dateKey];
             if (typeof sec !== "number") return;
-            var d = new Date(dateKey + "T00:00:00");
+            var d = new Date(dateKey + "T04:00:00");
             entries.push({ seconds: sec, recordedAt: d.getTime(), provisional: false });
           });
         }
@@ -679,6 +693,19 @@
         return total;
       }
 
+      function sumEntriesBetweenShifted(entries, startDate, endDateExclusive){
+        var total = 0;
+        var startMs = startDate.getTime();
+        var endMs = endDateExclusive.getTime();
+        entries.forEach(function(entry){
+          var shifted = entry.recordedAt - DAY_RESET_MS;
+          if (shifted >= startMs && shifted < endMs) {
+            total += entry.seconds;
+          }
+        });
+        return total;
+      }
+
       function getMonthKey(d){
         return d.getFullYear() + "-" + pad2(d.getMonth() + 1);
       }
@@ -686,17 +713,17 @@
       function renderLog(){
         var entries = loadLogEntries();
 
-        var today = new Date();
-        today.setHours(0,0,0,0);
-        var tomorrow = new Date(today.getTime()); tomorrow.setDate(tomorrow.getDate() + 1);
-        var todaySec = sumEntriesBetween(entries, today, tomorrow);
+        var todayShifted = getShiftedDate(nowMs());
+        todayShifted.setHours(0,0,0,0);
+        var tomorrowShifted = new Date(todayShifted.getTime()); tomorrowShifted.setDate(tomorrowShifted.getDate() + 1);
+        var todaySec = sumEntriesBetweenShifted(entries, todayShifted, tomorrowShifted);
 
-        var ws = weekStartISO(new Date());
+        var ws = weekStartISO(todayShifted);
         var wsNext = new Date(ws.getTime()); wsNext.setDate(wsNext.getDate() + 7);
         var lastWs = new Date(ws.getTime()); lastWs.setDate(lastWs.getDate() - 7);
 
-        var thisWeekSec = sumEntriesBetween(entries, ws, wsNext);
-        var lastWeekSec = sumEntriesBetween(entries, lastWs, ws);
+        var thisWeekSec = sumEntriesBetweenShifted(entries, ws, wsNext);
+        var lastWeekSec = sumEntriesBetweenShifted(entries, lastWs, ws);
 
         kpiToday.textContent = toHours1(todaySec) + "時間";
         kpiThisWeek.textContent = toHours1(thisWeekSec) + "時間";
@@ -705,8 +732,9 @@
         monthList.innerHTML = "";
         var months = {};
         entries.forEach(function(entry){
-          var key = getLocalISODate(new Date(entry.recordedAt));
-          var mkey = key.slice(0,7);
+          var shiftedDate = getShiftedDate(entry.recordedAt);
+          var key = getLocalISODate(shiftedDate);
+          var mkey = getMonthKey(shiftedDate);
           months[mkey] = (months[mkey] || 0) + entry.seconds;
         });
 
@@ -718,7 +746,7 @@
           return;
         }
 
-        var d = new Date();
+        var d = getShiftedDate(nowMs());
         d.setDate(1); d.setHours(0,0,0,0);
         var keys = [];
         for (var i=0; i<12; i++){
@@ -739,21 +767,23 @@
       function buildCopyText(){
         var entries = loadLogEntries();
 
-        var today = new Date(); today.setHours(0,0,0,0);
-        var tomorrow = new Date(today.getTime()); tomorrow.setDate(tomorrow.getDate() + 1);
+        var todayShifted = getShiftedDate(nowMs());
+        todayShifted.setHours(0,0,0,0);
+        var tomorrowShifted = new Date(todayShifted.getTime()); tomorrowShifted.setDate(tomorrowShifted.getDate() + 1);
 
-        var ws = weekStartISO(new Date());
+        var ws = weekStartISO(todayShifted);
         var wsNext = new Date(ws.getTime()); wsNext.setDate(wsNext.getDate() + 7);
         var lastWs = new Date(ws.getTime()); lastWs.setDate(lastWs.getDate() - 7);
 
-        var todaySec = sumEntriesBetween(entries, today, tomorrow);
-        var thisWeekSec = sumEntriesBetween(entries, ws, wsNext);
-        var lastWeekSec = sumEntriesBetween(entries, lastWs, ws);
+        var todaySec = sumEntriesBetweenShifted(entries, todayShifted, tomorrowShifted);
+        var thisWeekSec = sumEntriesBetweenShifted(entries, ws, wsNext);
+        var lastWeekSec = sumEntriesBetweenShifted(entries, lastWs, ws);
 
         var months = {};
         entries.forEach(function(entry){
-          var key = getLocalISODate(new Date(entry.recordedAt));
-          var mkey = key.slice(0,7);
+          var shiftedDate = getShiftedDate(entry.recordedAt);
+          var key = getLocalISODate(shiftedDate);
+          var mkey = getMonthKey(shiftedDate);
           months[mkey] = (months[mkey] || 0) + entry.seconds;
         });
 
@@ -769,7 +799,7 @@
           return lines.join("\n");
         }
 
-        var d = new Date();
+        var d = getShiftedDate(nowMs());
         d.setDate(1); d.setHours(0,0,0,0);
         for (var i=0; i<12; i++){
           var key = getMonthKey(d);
@@ -969,6 +999,22 @@
         state.remainingSec = clamp(rem, 0, 24*60*60);
       }
 
+      function ensureDayKey(){
+        var currentKey = getDayKeyByReset(nowMs());
+        if (!state.lastDayKey) {
+          state.lastDayKey = currentKey;
+          saveState();
+          return false;
+        }
+        if (state.lastDayKey !== currentKey) {
+          state.lastDayKey = currentKey;
+          state.focusCount = 0;
+          saveState();
+          return true;
+        }
+        return false;
+      }
+
       function pause(){
         syncRemainingFromEndAt();
         state.running = false;
@@ -1077,6 +1123,8 @@
       }
 
       function tick(){
+        var dayChanged = ensureDayKey();
+        if (dayChanged) render();
         if (!state.running) return;
         syncRemainingFromEndAt();
 
@@ -1094,6 +1142,7 @@
       }
 
       function render(){
+        ensureDayKey();
         if (state.running) syncRemainingFromEndAt();
 
         var nextSetNumber = state.focusCount + 1;
@@ -1229,6 +1278,7 @@
       });
 
       loadState();
+      ensureDayKey();
 
       (function(){
         var goal = state.goalSets || 0;
