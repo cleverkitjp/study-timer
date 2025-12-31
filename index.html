@@ -1015,6 +1015,7 @@
         state.running = true;
         state.endAt = nowMs() + state.remainingSec * 1000;
         if (wakeLockToggle.checked) setWakeLock(true);
+        vibrate();
         saveState();
         render();
         triggerPhaseFlash();
@@ -1072,7 +1073,7 @@
       }
 
       function vibrate(){
-        try { if (navigator.vibrate) navigator.vibrate([120, 60, 120]); } catch(e){}
+        try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch(e){}
       }
 
       async function notifyDone(message){
