@@ -256,6 +256,21 @@
       color: var(--text-sub);
       cursor: default;
     }
+    .goal-choice {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #f5f1ee;
+      color: var(--text);
+      display: grid;
+      gap: 10px;
+    }
+    .goal-choice[hidden] { display: none; }
+    .goal-choice-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
 
     @media (min-width: 560px) {
       .btn-row { grid-template-columns: 1fr 1fr 1fr; }
@@ -300,9 +315,12 @@
     "@context":"https://schema.org",
     "@type":"FAQPage",
     "mainEntity":[
-      {"@type":"Question","name":"ポモドーロテクニックは何分が基本？","acceptedAnswer":{"@type":"Answer","text":"一般的には「25分集中→5分休憩」をくり返し、4セットごとに長休憩を入れる形がよく使われます。"}},
-      {"@type":"Question","name":"25分がきついときは？","acceptedAnswer":{"@type":"Answer","text":"最初は短め（例：20分）にしても続けやすいことがあります。無理のない範囲で調整してください。"}},
-      {"@type":"Question","name":"スマホで画面を消しても動く？","acceptedAnswer":{"@type":"Answer","text":"はい。画面OFFや別タブでもタイマーは継続し、復帰時に表示が同期されます。"}}
+      {"@type":"Question","name":"基本は何分ですか？","acceptedAnswer":{"@type":"Answer","text":"一般的なポモドーロテクニックに合わせ、25分集中→5分休憩を1セットとしています。4セットごとに長休憩を入れる使い方がよく知られています。"}},
+      {"@type":"Question","name":"休憩をスキップしても大丈夫ですか？","acceptedAnswer":{"@type":"Answer","text":"休憩はスキップできますが、集中力を保つには短い休憩がおすすめです。軽く体を伸ばすだけでも集中力の維持に効果があります。"}},
+      {"@type":"Question","name":"画面を消したり、別のアプリを開いても動きますか？","acceptedAnswer":{"@type":"Answer","text":"はい。画面OFFや別タブ、別アプリに切り替えてもタイマーは継続します。復帰時に、残り時間や状態が自動で同期されます。"}},
+      {"@type":"Question","name":"目標セットを達成すると、なぜ一度止まるのですか？","acceptedAnswer":{"@type":"Answer","text":"一度区切りを作り、「もう1セット続ける」か「今日はここまで」を迷わず選べるようにするためです。続けると決めた場合は、すぐに休憩が始まります。"}},
+      {"@type":"Question","name":"「今日」はいつ切り替わりますか？","acceptedAnswer":{"@type":"Answer","text":"このツールでは、午前4時を1日の区切りにしています。夜遅くまでの学習も、同じ日の記録として残しやすくするためです。"}},
+      {"@type":"Question","name":"集中の記録はどのタイミングで残りますか？","acceptedAnswer":{"@type":"Answer","text":"集中（25分）が終わった時点で、自動で記録されます。もし誤って記録された場合は、次の休憩中に表示される「取り消す」から削除できます。"}}
     ]
   }
   </script>
@@ -342,6 +360,13 @@
         <div class="record-banner" id="recordBanner" hidden>
           <div id="recordBannerText"></div>
           <button class="record-action" id="recordBannerAction" type="button">取り消す</button>
+        </div>
+        <div class="goal-choice" id="goalChoice" hidden>
+          <div id="goalChoiceText"></div>
+          <div class="goal-choice-actions" id="goalChoiceActions">
+            <button class="btn" id="goalContinueBtn" type="button">もう1セット</button>
+            <button class="btn ghost" id="goalStopBtn" type="button">今日はここまで</button>
+          </div>
         </div>
       </div>
     </section>
@@ -415,12 +440,18 @@
       <details>
         <summary>よくある質問</summary>
         <div class="muted" style="margin-top:8px; line-height:1.7;">
-          <b>Q. 基本は何分？</b><br>
-          A. 一般的には「25分集中→5分休憩」、4セットごとに長休憩を入れる形がよく使われます。<br><br>
-          <b>Q. 休憩を飛ばしてもいい？</b><br>
-          A. 原則は休憩も含めて1セットですが、状況により休憩を飛ばしたいこともあります。疲れが残りやすい場合は休憩をおすすめします。<br><br>
-          <b>Q. 画面を消しても動く？</b><br>
-          A. はい。画面OFFや別タブでもタイマーは継続し、復帰時に表示が同期されます。
+          <b>Q. 基本は何分ですか？</b><br>
+          A. 一般的なポモドーロテクニックに合わせ、25分集中 → 5分休憩を1セットとしています。4セットごとに長休憩を入れる使い方がよく知られています。<br><br>
+          <b>Q. 休憩をスキップしても大丈夫ですか？</b><br>
+          A. 休憩はスキップできますが、集中力を保つには短い休憩がおすすめです。軽く体を伸ばすだけでも集中力の維持に効果があります。<br><br>
+          <b>Q. 画面を消したり、別のアプリを開いても動きますか？</b><br>
+          A. はい。画面OFFや別タブ、別アプリに切り替えてもタイマーは継続します。復帰時に、残り時間や状態が自動で同期されます。<br><br>
+          <b>Q. 目標セットを達成すると、なぜ一度止まるのですか？</b><br>
+          A. 一度区切りを作り、<b>「もう1セット続ける」か「今日はここまで」</b>を迷わず選べるようにするためです。続けると決めた場合は、すぐに休憩が始まります。<br><br>
+          <b>Q. 「今日」はいつ切り替わりますか？</b><br>
+          A. このツールでは、午前4時を1日の区切りにしています。夜遅くまでの学習も、同じ日の記録として残しやすくするためです。<br><br>
+          <b>Q. 集中の記録はどのタイミングで残りますか？</b><br>
+          A. 集中（25分）が終わった時点で、自動で記録されます。もし誤って記録された場合は、次の休憩中に表示される「取り消す」から削除できます。
         </div>
       </details>
     </section>
@@ -476,7 +507,10 @@
         wakeLock: null,
         audioArmed: false,
         lastCanceledAt: 0,
-        lastDayKey: ""
+        lastDayKey: "",
+        goalChoiceActive: false,
+        goalChoiceGoal: 0,
+        goalChoiceFinished: false
       };
 
       var timeDisplay = document.getElementById("timeDisplay");
@@ -492,6 +526,11 @@
       var recordBanner = document.getElementById("recordBanner");
       var recordBannerText = document.getElementById("recordBannerText");
       var recordBannerAction = document.getElementById("recordBannerAction");
+      var goalChoice = document.getElementById("goalChoice");
+      var goalChoiceText = document.getElementById("goalChoiceText");
+      var goalChoiceActions = document.getElementById("goalChoiceActions");
+      var goalContinueBtn = document.getElementById("goalContinueBtn");
+      var goalStopBtn = document.getElementById("goalStopBtn");
 
       var longBreakToggle = document.getElementById("longBreakToggle");
       var wakeLockToggle  = document.getElementById("wakeLockToggle");
@@ -832,6 +871,12 @@
       }
 
       function renderRecordBanner(){
+        var isRestPhase = (state.phase === PHASE_REST || state.phase === PHASE_LONG);
+        if (!isRestPhase) {
+          recordBanner.hidden = true;
+          recordBannerAction.disabled = true;
+          return;
+        }
         var entries = loadLogEntries();
         var latest = getLatestProvisionalEntry(entries);
         if (latest) {
@@ -841,7 +886,7 @@
             recordBannerAction.disabled = true;
             return;
           }
-          var label = timestamp + " ｜25分の集中を記録しました";
+          var label = timestamp + "｜25分の集中を記録しました";
           if (!label.trim()) {
             recordBanner.hidden = true;
             recordBannerAction.disabled = true;
@@ -861,7 +906,7 @@
             recordBannerAction.disabled = true;
             return;
           }
-          var canceledLabel = canceledAt + " ｜記録を取り消しました";
+          var canceledLabel = canceledAt + "｜記録を取り消しました";
           if (!canceledLabel.trim()) {
             state.lastCanceledAt = 0;
             recordBanner.hidden = true;
@@ -875,6 +920,46 @@
           return;
         }
         recordBanner.hidden = true;
+      }
+
+      function renderGoalChoice(){
+        if (!goalChoice) return;
+        if (state.goalChoiceActive) {
+          goalChoiceText.textContent = "目標の" + state.goalChoiceGoal + "セットが終わりました";
+          goalChoiceActions.hidden = false;
+          goalChoice.hidden = false;
+          return;
+        }
+        if (state.goalChoiceFinished) {
+          goalChoiceText.textContent = "おつかれさまでした！";
+          goalChoiceActions.hidden = true;
+          goalChoice.hidden = false;
+          return;
+        }
+        goalChoice.hidden = true;
+      }
+
+      function clearGoalChoice(){
+        state.goalChoiceActive = false;
+        state.goalChoiceFinished = false;
+        state.goalChoiceGoal = 0;
+      }
+
+      function startRestAfterGoalChoice(){
+        clearGoalChoice();
+        if (state.longBreakEnabled && (state.focusCount % LONG_BREAK_EVERY === 0)) {
+          state.phase = PHASE_LONG;
+          state.remainingSec = DEFAULT_LONG_SEC;
+        } else {
+          state.phase = PHASE_REST;
+          state.remainingSec = DEFAULT_REST_SEC;
+        }
+        state.running = true;
+        state.endAt = nowMs() + state.remainingSec * 1000;
+        if (wakeLockToggle.checked) setWakeLock(true);
+        saveState();
+        render();
+        triggerPhaseFlash();
       }
 
       async function copyText(text){
@@ -1050,6 +1135,7 @@
           state.remainingSec = DEFAULT_FOCUS_SEC;
           state.focusCount = 0;
           state.lastCanceledAt = 0;
+          clearGoalChoice();
           setWakeLock(false);
           saveState();
           render();
@@ -1081,6 +1167,9 @@
             state.remainingSec = DEFAULT_FOCUS_SEC;
             state.running = false;
             state.endAt = 0;
+            state.goalChoiceActive = true;
+            state.goalChoiceGoal = state.goalSets;
+            state.goalChoiceFinished = false;
             setWakeLock(false);
             saveState();
             render();
@@ -1180,6 +1269,7 @@
         setPhaseClass();
 
         renderRecordBanner();
+        renderGoalChoice();
         saveState();
       }
 
@@ -1190,6 +1280,13 @@
           pause();
           showToast("一時停止");
         } else {
+          if (state.goalChoiceActive) {
+            showToast("選択してください");
+            return;
+          }
+          if (state.goalChoiceFinished) {
+            clearGoalChoice();
+          }
           if (state.phase === PHASE_FOCUS) {
             finalizeProvisionalOnFocusStart();
           }
@@ -1237,11 +1334,17 @@
 
       Array.prototype.slice.call(document.querySelectorAll(".chip[data-goal]")).forEach(function(btn){
         btn.addEventListener("click", function(){
+          var prevGoal = state.goalSets;
           var goal = parseInt(btn.getAttribute("data-goal"), 10) || 0;
           state.goalSets = goal;
           Array.prototype.slice.call(document.querySelectorAll(".chip[data-goal]")).forEach(function(b){
             b.setAttribute("aria-pressed", (b === btn) ? "true" : "false");
           });
+          if (state.goalChoiceActive && goal > prevGoal) {
+            showToast("目標：" + goal + "セット");
+            startRestAfterGoalChoice();
+            return;
+          }
           saveState();
           showToast(goal === 0 ? "目標なし" : ("目標：" + goal + "セット"));
         });
@@ -1275,6 +1378,25 @@
         renderLog();
         render();
         showToast("記録を取り消しました");
+      });
+
+      goalContinueBtn.addEventListener("click", function(){
+        if (!state.goalChoiceActive) return;
+        state.goalSets += 1;
+        showToast("もう1セット続けます");
+        startRestAfterGoalChoice();
+      });
+
+      goalStopBtn.addEventListener("click", function(){
+        if (!state.goalChoiceActive) return;
+        state.goalChoiceActive = false;
+        state.goalChoiceFinished = true;
+        state.goalChoiceGoal = 0;
+        state.running = false;
+        state.endAt = 0;
+        setWakeLock(false);
+        saveState();
+        render();
       });
 
       loadState();
