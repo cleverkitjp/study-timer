@@ -931,6 +931,13 @@
         return null;
       }
 
+      function hideRecordBanner(){
+        recordBannerText.textContent = "";
+        recordBannerAction.textContent = "";
+        recordBannerAction.disabled = true;
+        recordBanner.hidden = true;
+      }
+
       function renderRecordBanner(){
         var isRestPhase = (state.phase === PHASE_REST || state.phase === PHASE_LONG);
         if (!isRestPhase) {
@@ -943,8 +950,7 @@
         if (latest) {
           var timestamp = formatDateTime(latest.recordedAt);
           if (!timestamp) {
-            recordBanner.hidden = true;
-            recordBannerAction.disabled = true;
+            hideRecordBanner();
             return;
           }
           var label = timestamp + "｜25分の集中を記録しました";
@@ -963,8 +969,7 @@
           var canceledAt = formatDateTime(state.lastCanceledAt);
           if (!canceledAt) {
             state.lastCanceledAt = 0;
-            recordBanner.hidden = true;
-            recordBannerAction.disabled = true;
+            hideRecordBanner();
             return;
           }
           var canceledLabel = canceledAt + "｜記録を取り消しました";
@@ -980,7 +985,7 @@
           recordBanner.hidden = false;
           return;
         }
-        recordBanner.hidden = true;
+        hideRecordBanner();
       }
 
       function renderGoalChoice(){
